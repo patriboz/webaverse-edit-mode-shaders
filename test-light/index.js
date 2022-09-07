@@ -8,7 +8,6 @@ const baseUrl = import.meta.url.replace(/(\/)[^\/\\]*$/, '$1');
 
 const simplex = new Simplex();
 const textureLoader = new THREE.TextureLoader();
-const lightTexture = textureLoader.load(`${baseUrl}/textures/light.png`);
 const maskTexture = textureLoader.load(`${baseUrl}/textures/mask5.png`);
 const trapezoidTexture = textureLoader.load(`${baseUrl}/textures/trapezoid.png`);
 
@@ -16,30 +15,64 @@ export default () => {
   const app = useApp();
   const {camera} = useInternals();
   const localPlayer = useLocalPlayer();
-  const _getGeometry = (geometry, attributeSpecs, particleCount) => {
-    const geometry2 = new THREE.BufferGeometry();
-    ['position', 'normal', 'uv'].forEach(k => {
-    geometry2.setAttribute(k, geometry.attributes[k]);
-    });
-    geometry2.setIndex(geometry.index);
 
-    const positions = new Float32Array(particleCount * 3);
-    const positionsAttribute = new THREE.InstancedBufferAttribute(positions, 3);
-    geometry2.setAttribute('positions', positionsAttribute);
-
-    for(const attributeSpec of attributeSpecs){
-        const {
-            name,
-            itemSize,
-        } = attributeSpec;
-        const array = new Float32Array(particleCount * itemSize);
-        geometry2.setAttribute(name, new THREE.InstancedBufferAttribute(array, itemSize));
-    }
-
-    return geometry2;
-  };
+  const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
+  let currentDir = new THREE.Vector3();
+  //################################################ trace playerDir ########################################
   {
-    const particleCount = 20;
+      useFrame(() => {
+          localVector.set(0, 0, -1);
+          currentDir = localVector.applyQuaternion( localPlayer.quaternion );
+          currentDir.normalize();
+      });
+  }
+
+  {
+
+    const _getGeometry = (geometry, attributeSpecs, particleCount) => {
+        const geometry2 = new THREE.BufferGeometry();
+        ['position', 'normal', 'uv'].forEach(k => {
+        geometry2.setAttribute(k, geometry.attributes[k]);
+        });
+        geometry2.setIndex(geometry.index);
+    
+        const positions = new Float32Array(particleCount * 3);
+        const positionsAttribute = new THREE.InstancedBufferAttribute(positions, 3);
+        geometry2.setAttribute('positions', positionsAttribute);
+    
+        for(const attributeSpec of attributeSpecs){
+            const {
+                name,
+                itemSize,
+            } = attributeSpec;
+            const array = new Float32Array(particleCount * itemSize);
+            geometry2.setAttribute(name, new THREE.InstancedBufferAttribute(array, itemSize));
+        }
+    
+        return geometry2;
+    };
+
+
+
+    const tildeGrabGroup = new THREE.Group();
+
+    let iphone = null;
+    (async () => {
+        const u = `${baseUrl}/assets/iphone.glb`;
+        const i = await new Promise((accept, reject) => {
+            const {gltfLoader} = useLoaders();
+            gltfLoader.load(u, accept, function onprogress() {}, reject);
+            
+        });
+        iphone = i.scene;
+        iphone.scale.set(0.1, 0.1, 0.1);
+        tildeGrabGroup.add(iphone)
+        app.add(tildeGrabGroup);
+    })();
+
+
+    const particleCount = 18;
     const info = {
         fadeIn: [particleCount],
         maxOP: [particleCount],
@@ -48,12 +81,13 @@ export default () => {
     attributeSpecs.push({name: 'scales', itemSize: 1});
     attributeSpecs.push({name: 'opacity', itemSize: 1});
     attributeSpecs.push({name: 'rotation', itemSize: 3});
+    attributeSpecs.push({name: 'noiseMovement', itemSize: 3});
     const geometry2 = new THREE.PlaneBufferGeometry(0.25, 1.2);
     const geometry = _getGeometry(geometry2, attributeSpecs, particleCount);
     const scAttribute = geometry.getAttribute('scales');
     const opAttribute = geometry.getAttribute('opacity');
     for(let i = 0; i < particleCount; i++){
-        scAttribute.setX(i, 0.8 + Math.random() * 0.5);
+        scAttribute.setX(i, 0.6 + Math.random());
         opAttribute.setX(i, Math.random());
         info.fadeIn[i] = true;
         info.maxOP[i] = 0.5 + Math.random() * 0.5;
@@ -68,15 +102,20 @@ export default () => {
             },
             trapezoidTexture: {
                 value: trapezoidTexture
+            },
+            noiseMovement: {
+                value: new THREE.Vector3()
             }
         },
         vertexShader: `
             ${THREE.ShaderChunk.common}
             ${THREE.ShaderChunk.logdepthbuf_pars_vertex}
+            
             attribute float scales;
             attribute float opacity;
             attribute vec3 rotation;
             attribute vec3 positions;
+            attribute vec3 noiseMovement;
 
             varying vec2 vUv;
             varying float vOpacity;
@@ -107,6 +146,9 @@ export default () => {
                 pos *= rotZ;
                 pos *= rotX;
                 pos += positions;
+                pos.x += noiseMovement.x * (1. - uv.y);
+                pos.z += noiseMovement.z * (1. - uv.y);
+
                 
 
                 vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
@@ -131,15 +173,15 @@ export default () => {
                 vec4 trapezoid = texture2D(trapezoidTexture, vUv); 
                 
                 // scanline
-                float scanline = sin(vPos.y * 160.0) * 0.04;
+                float scanline = sin(vPos.y * 200.0) * 0.04;
                 
                 
-                gl_FragColor = trapezoid * vec4(0.120, 0.280, 1.920, 1.0) * (1. + vUv.y);
+                gl_FragColor = trapezoid * vec4(0.120, 0.280, 1.920, 1.0) * (2. + vUv.y);
                 
                 
                 if (gl_FragColor.b > 0.)
                     gl_FragColor -= scanline;
-                gl_FragColor.a = vOpacity * pow(vUv.y, 1.0);
+                gl_FragColor.a = vOpacity * pow(vUv.y, 1.7);
                 
                 ${THREE.ShaderChunk.logdepthbuf_fragment}
                 
@@ -153,17 +195,27 @@ export default () => {
     const godRay = new THREE.InstancedMesh(geometry, material, particleCount);
     const group = new THREE.Group();
     group.add(godRay);
-    app.add(group)
     group.rotation.x = -Math.PI;
-    // group.position.y = 4.3;
-    
+    group.position.y = 0.75;
+    tildeGrabGroup.add(group);
+
+    const quaternion = new THREE.Quaternion();
+    quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
     useFrame(({timestamp}) => {
-        group.position.copy(localPlayer.position);
-        group.position.y += localPlayer.avatar ? localPlayer.avatar.height - 0.5 : 0;
+        localVector2.set(currentDir.x, currentDir.y, currentDir.z).applyQuaternion(quaternion);
+        tildeGrabGroup.position.copy(localPlayer.position);
+        tildeGrabGroup.position.x += 0.3 * localVector2.x;
+        tildeGrabGroup.position.z += 0.3 * localVector2.z;
+        if (iphone) {
+            iphone.rotation.copy(localPlayer.rotation);
+        }
+
         const scalesAttribute = godRay.geometry.getAttribute('scales');
         const positionsAttribute = godRay.geometry.getAttribute('positions');
         const rotationAttribute = godRay.geometry.getAttribute('rotation');
         const opacityAttribute = godRay.geometry.getAttribute('opacity');
+        const noiseMovementAttribute = godRay.geometry.getAttribute('noiseMovement');
+        
         
         for(let i = 0; i < particleCount; i++){
             if (opacityAttribute.getX(i) <= 0) {
@@ -171,7 +223,7 @@ export default () => {
                 opacityAttribute.setX(i, Math.random() * 0.05);
                 info.maxOP[i] = 0.5 + Math.random() * 0.5;
                 info.fadeIn[i] = true;
-                scalesAttribute.setX(i, 0.8 + Math.random());
+                scalesAttribute.setX(i, 0.6 + Math.random());
             }
 
             if (opacityAttribute.getX(i) >= info.maxOP[i]) {
@@ -188,13 +240,14 @@ export default () => {
             
             
             const theta = 2. * Math.PI * i / particleCount;
-            let xNoise = simplex.noise1D(Math.sin(theta) * timestamp * 0.001) * 0.05;
-            let zNoise = simplex.noise1D(Math.cos(theta) * timestamp * 0.001) * 0.05;
+            let xNoise = simplex.noise1D(Math.sin(theta) * timestamp * 0.001) * 0.1;
+            let zNoise = simplex.noise1D(Math.cos(theta) * timestamp * 0.001) * 0.1;
+            noiseMovementAttribute.setXYZ(i, xNoise, 0, zNoise);
             positionsAttribute.setXYZ(
                                     i,
-                                    Math.sin(theta) * 0.22 + xNoise,
+                                    Math.sin(theta) * 0.22,
                                     0,
-                                    Math.cos(theta) * 0.22 + zNoise
+                                    Math.cos(theta) * 0.22
             ) 
             // const n = Math.cos(theta) > 0 ? 1 : -1;
             const n = Math.cos(camera.rotation.y) > 0 ? -1 : 1;
@@ -213,6 +266,7 @@ export default () => {
         positionsAttribute.needsUpdate = true;
         rotationAttribute.needsUpdate = true;
         opacityAttribute.needsUpdate = true;
+        noiseMovementAttribute.needsUpdate = true;
     
         app.updateMatrixWorld();
     });
@@ -224,10 +278,6 @@ export default () => {
 };
 
 
-
-
-
-// (async () => {
     //     const u = `${baseUrl}/assets/cone2.glb`;
     //     const cone = await new Promise((accept, reject) => {
     //         const {gltfLoader} = useLoaders();
