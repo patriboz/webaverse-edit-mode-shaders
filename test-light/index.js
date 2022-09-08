@@ -150,7 +150,6 @@ export default () => {
                 pos.z += noiseMovement.z * (1. - uv.y);
 
                 
-
                 vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
                 vec4 viewPosition = viewMatrix * modelPosition;
                 vec4 projectionPosition = projectionMatrix * viewPosition;
@@ -181,7 +180,7 @@ export default () => {
                 
                 if (gl_FragColor.b > 0.)
                     gl_FragColor -= scanline;
-                gl_FragColor.a = vOpacity * pow(vUv.y, 1.7);
+                gl_FragColor.a = vOpacity * pow(vUv.y, 2.0);
                 
                 ${THREE.ShaderChunk.logdepthbuf_fragment}
                 
@@ -276,130 +275,3 @@ export default () => {
   
   return app;
 };
-
-
-    //     const u = `${baseUrl}/assets/cone2.glb`;
-    //     const cone = await new Promise((accept, reject) => {
-    //         const {gltfLoader} = useLoaders();
-    //         gltfLoader.load(u, accept, function onprogress() {}, reject);
-            
-    //     });
-    //     cone.scene.children[0].material = new WebaverseShaderMaterial({
-    //         uniforms: {
-    //             cameraBillboardQuaternion: {
-    //                 value: new THREE.Quaternion(),
-    //             },
-    //             lightTexture:{value: lightTexture},
-    //         },
-    //         vertexShader: `\
-                
-    //             uniform vec4 cameraBillboardQuaternion;
-        
-    //             varying vec2 vUv;
-    //             varying vec3 vPos;
-                
-    //             vec3 rotateVecQuat(vec3 position, vec4 q) {
-    //                 vec3 v = position.xyz;
-    //                 return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
-    //             }
-            
-    //             void main() {
-    //                 vUv = uv;
-    //                 vUv.y = 1. - vUv.y;
-    //                 vPos = position;
-    //                 vec3 pos = position;
-                    
-    //                 pos = rotateVecQuat(pos, cameraBillboardQuaternion);
-                    
-    //                 vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
-    //                 vec4 viewPosition = viewMatrix * modelPosition;
-    //                 vec4 projectionPosition = projectionMatrix * viewPosition;
-            
-    //                 gl_Position = projectionPosition;
-    //             }
-    //         `,
-    //         fragmentShader: `\
-    //             varying vec2 vUv;
-    //             varying vec3 vPos;
-              
-    //             uniform sampler2D lightTexture;
-               
-    //             void main() {
-    //                 vec4 light = texture2D(lightTexture, vUv);
-                   
-    //                 gl_FragColor= light;
-                    
-    //             }
-    //         `,
-    //         side: THREE.DoubleSide,
-    //         transparent: true,
-    //         depthWrite: false,
-    //         blending: THREE.AdditiveBlending,
-    //     });
-    //     app.add(cone.scene);
-    //     cone.scene.position.y = 3;
-    //     cone.scene.scale.set(0.3, 0.3, 0.3);
-    //     // let physicsId;
-    //     // physicsId = physics.addGeometry(cone.scene);
-    //     // physicsIds.push(physicsId)
-    // })();
-
-    // const lightMaterial = new WebaverseShaderMaterial({
-    //     uniforms: {
-    //         cameraBillboardQuaternion: {
-    //             value: new THREE.Quaternion(),
-    //         },
-    //         lightTexture:{value: lightTexture},
-    //     },
-    //     vertexShader: `\
-            
-    //         uniform vec4 cameraBillboardQuaternion;
-    
-    //         varying vec2 vUv;
-    //         varying vec3 vPos;
-            
-    //         vec3 rotateVecQuat(vec3 position, vec4 q) {
-    //             vec3 v = position.xyz;
-    //             return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
-    //         }
-        
-    //         void main() {
-    //             vUv = uv;
-    //             vPos = position;
-    //             vec3 pos = position;
-                
-    //             pos = rotateVecQuat(pos, cameraBillboardQuaternion);
-                
-    //             vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
-    //             vec4 viewPosition = viewMatrix * modelPosition;
-    //             vec4 projectionPosition = projectionMatrix * viewPosition;
-        
-    //             gl_Position = projectionPosition;
-    //         }
-    //     `,
-    //     fragmentShader: `\
-    //         varying vec2 vUv;
-    //         varying vec3 vPos;
-          
-    //         uniform sampler2D lightTexture;
-           
-    //         void main() {
-    //             vec4 light = texture2D(lightTexture, vUv);
-               
-    //             gl_FragColor= light;
-                
-    //         }
-    //     `,
-    //     side: THREE.DoubleSide,
-    //     transparent: true,
-    //     depthWrite: false,
-    //     blending: THREE.AdditiveBlending,
-    // });
-    // const geometry = new THREE.PlaneGeometry( 1, 1 );
-    // const plane = new THREE.Mesh(geometry, lightMaterial);
-    // const plane2 = new THREE.Mesh(geometry, lightMaterial);
-    // plane.position.y = 2;
-    // plane2.position.y = 2;
-    // plane2.rotation.y = Math.PI / 2;
-    // // app.add(plane);
-    // // app.add(plane2);
