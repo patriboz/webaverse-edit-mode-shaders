@@ -164,7 +164,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                 void main() {
                     mainImage(gl_FragColor, vUv * iResolution.xy);
                     gl_FragColor *= vec4(0.120, 0.280, 1.920, 1.0) * (2. + (vPos.y + 1.));
-                    float scanline = sin((vPos.y + 1.) * 80.0) * 0.04;
+                    float scanline = sin((vPos.y + 1.) * 80.0) * gl_FragColor.b * 0.04;
                     gl_FragColor -= scanline;
                     gl_FragColor.a *= pow(vPos.y + 1., 3.0);
                     
