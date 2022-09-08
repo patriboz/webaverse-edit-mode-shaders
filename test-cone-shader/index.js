@@ -47,7 +47,7 @@ export default () => {
         let cone = null;
         const group = new THREE.Group();
         (async () => {
-            const u = `${baseUrl}/assets/cone2.glb`;
+            const u = `${baseUrl}/assets/cone3.glb`;
             cone = await new Promise((accept, reject) => {
                 const {gltfLoader} = useLoaders();
                 gltfLoader.load(u, accept, function onprogress() {}, reject);
@@ -169,10 +169,10 @@ export default () => {
                     
                     void main() {
                         mainImage(gl_FragColor, vUv * iResolution.xy);
-                        gl_FragColor *= vec4(0.120, 0.280, 1.920, 1.0) * (2. + (vPos.y + 1.));
-                        float scanline = sin((vPos.y + 1.) * 80.0) * gl_FragColor.b * 0.04;
+                        gl_FragColor *= vec4(0.120, 0.280, 1.920, 1.0) * (2. + (vPos.y + 1.8));
+                        float scanline = sin((vPos.y + 1.8) * 80.0) * gl_FragColor.b * 0.04;
                         gl_FragColor -= scanline;
-                        gl_FragColor.a *= pow(vPos.y + 1., 3.0);
+                        gl_FragColor.a *= pow(vPos.y + 1.8, 3.0);
                         
                     ${THREE.ShaderChunk.logdepthbuf_fragment}
                     }
@@ -182,17 +182,24 @@ export default () => {
                 depthWrite: false,
                 blending: THREE.AdditiveBlending,
             });
+            
             group.add(cone.scene);
             tildeGrabGroup.add(group);
-            cone.scene.position.y = 1.3;
-            cone.scene.position.z = -0.02;
-            cone.scene.rotation.x = Math.PI;
+            // app.add(group);
             cone.scene.scale.set(0.5, 0.5, 0.5);
+            cone.scene.position.y = 0.2;
+            cone.scene.position.z = -0.02;
             app.updateMatrixWorld();
             
     
     
         })();
+
+
+        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+        const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+        const cube = new THREE.Mesh( geometry, material );
+        app.add( cube );
         
         const quaternion = new THREE.Quaternion();
         quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
@@ -205,6 +212,7 @@ export default () => {
                 iphone.rotation.copy(localPlayer.rotation);
             }
             if (cone) {
+                cone.scene.rotation.x = - Math.abs(Math.sin(timestamp * 0.0005)) * (Math.PI / 2);
                 // group.rotation.y = camera.rotation.y;
                 group.rotation.copy(localPlayer.rotation);
                 cone.scene.children[0].material.uniforms.uTime.value=timestamp / 1000;
