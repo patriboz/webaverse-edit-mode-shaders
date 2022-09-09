@@ -186,6 +186,7 @@ export default () => {
             group.add(cone.scene);
             tildeGrabGroup.add(group);
             // app.add(group);
+            cone.scene.rotation.x = Math.PI / 2;
             cone.scene.scale.set(0.5, 0.5, 0.5);
             cone.scene.position.y = 0.2;
             cone.scene.position.z = -0.02;
@@ -212,9 +213,10 @@ export default () => {
                 iphone.rotation.copy(localPlayer.rotation);
             }
             if (cone) {
-                cone.scene.rotation.x = - Math.abs(Math.sin(timestamp * 0.0005)) * (Math.PI / 2);
+                // cone.scene.rotation.x = - Math.abs(Math.sin(timestamp * 0.0005)) * (Math.PI / 2);
                 // group.rotation.y = camera.rotation.y;
-                group.rotation.copy(localPlayer.rotation);
+                group.lookAt(cube.position)
+                // group.rotation.copy(localPlayer.rotation);
                 cone.scene.children[0].material.uniforms.uTime.value=timestamp / 1000;
                 cone.scene.children[0].material.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight, 1);
             }
